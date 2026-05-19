@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>凱比機器人 · 溫馨互動教學機</title>
+    <style>
+        body {
+            font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            text-align: center;
+            padding: 15px;
+            margin: 0;
+            color: #2c3e50;
+            box-sizing: border-box;
+            min-height: 100vh;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 5px 0;
+            color: #1a365d;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            font-size: 1.25rem;
+            color: #4a5568;
+            margin: 0 0 15px 0;
+            font-weight: bold;
+        }
+        
+        /* 橫版主容器 - 重新微調權重，給右邊文字更多空間 */
+        .workspace {
+            display: flex;
+            justify-content: center;
+            align-items: stretch; 
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: 660px; 
+        }
+
+        /* 左側面板：機器人專區 (稍微縮小一點點，騰出空間給右邊) */
+        .left-panel {
+            flex: 0.9;
+            background: white;
+            padding: 20px;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            box-sizing: border-box;
+        }
+
+        /* 右側面板：功能選單區 (拉寬，確保字體不跳行) */
+        .right-panel {
+            flex: 1.1;
+            background: white;
+            padding: 20px;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-sizing: border-box;
+            overflow: hidden; 
+        }
+
+        .guide-text {
+            font-size: 1.45rem;
+            font-weight: bold;
+            color: #2b6cb0;
+            margin-bottom: 20px;
+            background: #ebf8ff;
+            padding: 8px 15px;
+            border-radius: 50px;
+            width: 100%;
+            box-sizing: border-box;
+            white-space: nowrap; /* 防止提示字跳行 */
+        }
+
+        /* ------------------ 🦾 結構鎖死：一體化凱比機器人 ------------------ */
+        .robot-main-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 440px;
+            margin: auto;
+            user-select: none;
+        }
+
+        /* 共用點擊縮放效果 */
+        .interactive-part {
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-align: center;
+        }
+        .interactive-part:hover {
+            transform: scale(1.05);
+            filter: brightness(1.03);
+        }
+        .interactive-part:active {
+            transform: scale(0.95);
+        }
+
+        /* 裝飾耳朵 */
+        .ear-container {
+            position: relative;
+            width: 250px;
+            height: 0;
+        }
+        .robot-ear {
+            position: absolute;
+            top: 55px; width: 22px; height: 42px;
+            background: #cbd5e0;
+        }
+        .ear-left { left: 10px; border-radius: 10px 0 0 10px; border-left: 5px solid #4299e1; }
+        .ear-right { right: 10px; border-radius: 0 10px 10px 0; border-right: 5px solid #4299e1; }
+
+        /* 頭部 (穩居中軸) */
+        .robot-head {
+            width: 200px;
+            height: 150px;
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            border: 7px solid #4299e1;
+            border-radius: 60px 60px 50px 50px;
+            font-size: 1.4rem;
+            color: #2b6cb0;
+            align-items: flex-end;
+            padding-bottom: 12px;
+            box-sizing: border-box;
+            z-index: 3;
+            position: relative;
+        }
+        .robot-face {
+            position: absolute;
+            top: 18px; left: 20px;
+            width: 146px; height: 68px;
+            background: #1a202c;
+            border-radius: 25px;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 18px;
+            box-sizing: border-box;
+        }
+        .robot-eye {
+            width: 22px; height: 22px;
+            background: #00f0ff;
+            border-radius: 50%;
+            box-shadow: 0 0 12px #00f0ff;
+        }
+        .blush {
+            position: absolute;
+            bottom: 10px; width: 16px; height: 8px;
+            background: #ffb6c1;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+        .blush-left { left: 20px; }
+        .blush-right { right: 20px; }
+
+        /* 頸部連接支架 */
+        .robot-neck {
+            width: 45px;
+            height: 14px;
+            background: #94a3b8;
+            z-index: 2;
+            margin: -4px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 軀幹與手臂整合列 */
+        .robot-torso-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0; 
+            z-index: 2;
+        }
+
+        /* 機械關節結構 */
+        .arm-joint {
+            width: 40px;
+            height: 14px;
+            background: #cbd5e1;
+            border: 3.5px solid #64748b;
+            box-sizing: border-box;
+        }
+        .arm-joint-left { border-radius: 5px 0 0 5px; margin-right: -4px; }
+        .arm-joint-right { border-radius: 0 5px 5px 0; margin-left: -4px; }
+
+        /* 機械手掌 */
+        .mechanical-hand {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px; 
+            font-size: 1.3rem;
+            color: white;
+            z-index: 4;
+            box-sizing: border-box;
+        }
+        .hand-left-color {
+            background: linear-gradient(135deg, #319795 0%, #1d4044 100%);
+            border: 4px solid #e6fffa;
+        }
+        .hand-right-color {
+            background: linear-gradient(135deg, #dd6b20 0%, #82341a 100%);
+            border: 4px solid #fff5f5;
+        }
+
+        /* 身體與大肚子螢幕 */
+        .robot-body-trunk {
+            width: 165px;
+            height: 195px;
+            background: linear-gradient(135deg, #ffffff 0%, #edf2f7 100%);
+            border: 7px solid #a0aec0;
+            border-radius: 50px 50px 40px 40px;
+            position: relative;
+            box-sizing: border-box;
+            z-index: 3;
+        }
+        .robot-belly-screen {
+            position: absolute;
+            top: 22px; left: 12px;
+            width: 127px; height: 115px;
+            background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
+            border: 5px solid #fefcbf;
+            border-radius: 22px;
+            font-size: 1.5rem;
+            color: #4a5568;
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.15);
+            box-sizing: border-box;
+        }
+
+
+        /* ------------------ 右側選單與清單 (優化文字防跳行) ------------------ */
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .menu-btn {
+            padding: 14px 20px;
+            font-size: clamp(1.2rem, 1.4vw, 1.5rem); /* 使用內縮彈性字體，大螢幕夠大，小螢幕不爆開 */
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            text-align: left;
+            white-space: nowrap; /* ⚡ 核心修改：強制文字絕對不跳行！ */
+            overflow: hidden;
+            text-overflow: ellipsis; /* 萬一真的太擠就呈現引號，絕不亂跳行 */
+        }
+        .menu-btn:hover { transform: translateY(-1px); filter: brightness(1.03); }
+        
+        .btn-teal { background: #e6fffa; color: #234e52; border: 2.5px solid #4fd1c5; }
+        .btn-orange { background: #fff5f5; color: #9c4221; border: 2.5px solid #f6ad55; }
+        .btn-blue { background: #ebf8ff; color: #2b6cb0; border: 2.5px solid #63b3ed; }
+
+        /* 右側：籤詩展示滾動區 */
+        .fortune-display-area {
+            background: #f7fafc;
+            border-radius: 18px;
+            padding: 20px;
+            border: 3px dashed #cbd5e0;
+            text-align: left;
+            margin-bottom: 15px;
+            flex: 1; 
+            overflow-y: auto; 
+            position: relative;
+        }
+        
+        .area-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .area-title {
+            font-size: 1.45rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 0;
+            white-space: nowrap; /* 標題也不要跳行 */
+        }
+        .close-btn {
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 5px 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none; 
+            white-space: nowrap;
+        }
+        .close-btn:hover { background: #cbd5e0; color: #cc0000; }
+
+        .fortune-list {
+            list-style: none;
+            padding: 0; margin: 0;
+            font-size: 1.35rem;
+            color: #4a5568;
+            line-height: 1.8;
+        }
+        .fortune-list li {
+            padding: 8px 10px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .fortune-list li:hover {
+            background-color: #fff;
+            color: #cc0000;
+            font-weight: bold;
+        }
+
+        /* 大字結果看板 */
+        #result-box {
+            box-sizing: border-box;
+            padding: 15px;
+            font-size: 1.65rem;
+            font-weight: bold;
+            line-height: 1.4;
+            border-radius: 20px;
+            display: none; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+            text-align: left;
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 底部按鈕列 */
+        .system-control-bar {
+            max-width: 1400px;
+            margin: 20px auto 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .sys-btn {
+            padding: 12px 30px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.05);
+            white-space: nowrap;
+        }
+        .sys-btn:hover { transform: translateY(-2px); filter: brightness(0.95); }
+        
+        .btn-refresh { background-color: #edf2f7; color: #4a5568; border: 2px solid #cbd5e0; }
+        .btn-leave { background-color: #e53e3e; color: white; border: 2px solid #c53030; }
+    </style>
+</head>
+<body>
+
+    <h1>🤖 凱比機器人 · 溫馨互動教學機</h1>
+    <p class="subtitle">👵 長輩教學專用橫版面板：點擊左邊機器人可模擬抽籤，右邊點選單可展開查閱所有籤詩 👴</p>
+
+    <div class="workspace">
+        
+        <div class="left-panel">
+            <div class="guide-text">🎯 請用手指點擊模擬畫面上的凱比部位：</div>
+            
+            <div class="robot-main-body">
+                <div class="ear-container">
+                    <div class="robot-ear ear-left"></div>
+                    <div class="robot-ear ear-right"></div>
+                </div>
+
+                <div class="interactive-part robot-head" onclick="teachGuide('智慧籤')">
+                    <div class="robot-face">
+                        <div class="robot-eye"></div>
+                        <div class="robot-eye"></div>
+                        <div class="blush blush-left"></div>
+                        <div class="blush blush-right"></div>
+                    </div>
+                    <b>1. 點我頭頂</b>
+                </div>
+
+                <div class="robot-neck"></div>
+
+                <div class="robot-torso-row">
+                    
+                    <div class="interactive-part mechanical-hand hand-left-color" onclick="teachGuide('答案籤')">
+                        <b>2.<br>左手</b>
+                    </div>
+                    <div class="arm-joint arm-joint-left"></div>
+
+                    <div class="robot-body-trunk">
+                        <div class="interactive-part robot-belly-screen" onclick="teachGuide('說明')">
+                            <br><b>4.<br>點我肚子</b>
+                        </div>
+                    </div>
+
+                    <div class="arm-joint arm-joint-right"></div>
+                    <div class="interactive-part mechanical-hand hand-right-color" onclick="teachGuide('勇氣籤')">
+                        <b>3.<br>右手</b>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="guide-text">📋 點擊下方選單，查閱各分類所有籤詩：</div>
+            
+            <div class="menu-container">
+                <button class="menu-btn btn-teal" onclick="showAllFortunes('答案籤')">✋ 左手：今日答案籤</button>
+                <button class="menu-btn btn-orange" onclick="showAllFortunes('勇氣籤')">✋ 右手：勇氣陪伴籤</button>
+                <button class="menu-btn btn-blue" onclick="showAllFortunes('智慧籤')">👶 頭頂：智慧金句籤</button>
+            </div>
+
+            <div class="fortune-display-area">
+                <div class="area-header">
+                    <div id="area-title-text" class="area-title" style="color: #718096; width: 100%; text-align: center; padding-top: 40px;">💡 請點擊上方任一按鈕，此處將展開所有籤詩內容</div>
+                    <button id="close-list-btn" class="close-btn" onclick="clearFortuneList()">❌ 收起列表</button>
+                </div>
+                <ul class="fortune-list" id="fortune-list-ul"></ul>
+            </div>
+
+            <div id="result-box"></div>
+        </div>
+
+    </div>
+
+    <div class="system-control-bar">
+        <button class="sys-btn btn-refresh" onclick="refreshPage()">🔄 重新刷新 (清空)</button>
+        <button class="sys-btn btn-leave" onclick="leavePage()">🚪 我已知道如何與凱比機器人互動了，離開此頁</button>
+    </div>
+
+    <script>
+        const fortunes = {
+            '答案籤': [
+                "有些答案不是想出來的，是等心安靜後自己浮出來的。",
+                "你以為今天是停下來，也許其實是在重新整理方向。",
+                "不要急著推開那扇門，外部也許還有別的風景。",
+                "看似繞遠的路，有時是在避開更大的風。",
+                "今天適合少說一點，多聽一點。",
+                "先把眼前的一步走好，遠方會慢慢清楚。"
+            ],
+            '勇氣籤': [
+                "你不需要馬上變好，先讓自己安穩下來。",
+                "今天只完成一件小事，也已經很不容易。",
+                "有些心情不用解釋，也值得被好好照顧。",
+                "累的時候，不是你不夠堅強，是用心走了很久。",
+                "把今天過完，就是一種很安靜的勇敢。",
+                "你可以不用很有精神，也仍然值得被溫柔對待。"
+            ],
+            '智慧籤': [
+                "走得慢的人，也看得見快的人錯過的風景。",
+                "人這一生，不是每一步都要贏，有時穩穩站著就很好。",
+                "真正重要的事，常常不是很大聲，而是一直都在。",
+                "日子不是每天都亮，但每天都可以留一盞小燈。",
+                "會轉彎的人，不是退縮，是懂得保護自己。",
+                "心寬一點，路就不會那麼窄。"
+            ]
+        };
+
+        // 點擊選單按鈕：展開清單 + 語音導覽
+        function showAllFortunes(type) {
+            const titleText = document.getElementById('area-title-text');
+            const listUl = document.getElementById('fortune-list-ul');
+            const closeBtn = document.getElementById('close-list-btn');
+            
+            window.speechSynthesis.cancel(); 
+
+            listUl.innerHTML = ""; 
+            titleText.style.paddingTop = "0px";
+            titleText.style.textAlign = "left";
+            closeBtn.style.display = "block"; 
+            
+            let name = "";
+            let audioTxt = "";
+            if(type === '答案籤') {
+                name = "📋 【今日答案籤】內容總表：";
+                audioTxt = "摸凱比的左手，可以抽出今日答案籤喔！";
+            }
+            if(type === '勇氣籤') {
+                name = "📋 【勇氣陪伴籤】內容總表：";
+                audioTxt = "摸凱比的右手，可以抽出勇氣陪伴籤喔！";
+            }
+            if(type === '智慧籤') {
+                name = "📋 【智慧金句籤】內容總表：";
+                audioTxt = "摸凱比的頭頂，可以抽出智慧金句籤喔！";
+            }
+            
+            titleText.innerHTML = name;
+
+            fortunes[type].forEach((phrase, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<b>${index + 1}.</b> ${phrase}`;
+                listUl.appendChild(li);
+            });
+
+            speak(audioTxt); 
+        }
+
+        function clearFortuneList() {
+            const titleText = document.getElementById('area-title-text');
+            const listUl = document.getElementById('fortune-list-ul');
+            const closeBtn = document.getElementById('close-list-btn');
+            
+            window.speechSynthesis.cancel();
+            listUl.innerHTML = "";
+            closeBtn.style.display = "none";
+            titleText.style.paddingTop = "40px";
+            titleText.style.textAlign = "center";
+            titleText.innerHTML = "💡 請點擊上方任一按鈕，此處將展開所有籤詩內容";
+        }
+
+        // 點擊模擬機器人部位：純粹顯示結果
+        function teachGuide(type) {
+            const resultBox = document.getElementById('result-box');
+            resultBox.style.display = 'block';
+            
+            window.speechSynthesis.cancel(); 
+
+            let showHtml = "";
+            let audioTxt = "";
+
+            if (type === '說明') {
+                resultBox.style.background = "linear-gradient(135deg, #fefcbf 0%, #faf089 100%)";
+                resultBox.style.color = "#744210";
+                resultBox.style.border = "3px solid #ecc94b";
+                
+                showHtml = `📢 <b>【語音操作說明】</b><br>
+                            「大家好！我是凱比機器人。摸我的頭頂可以抽智慧金句籤，摸我的左手可以抽今日答案籤，摸我的右手可以抽勇氣陪伴籤喔！快來跟我互動吧！」`;
+                audioTxt = "大家好！我是凱比機器人。摸我的頭頂可以抽智慧金句籤，摸我的左手可以抽今日答案籤，摸我的右手可以抽勇氣陪伴籤喔！快來跟我互動吧！";
+            } else {
+                const randomIndex = Math.floor(Math.random() * 6);
+                const phrase = fortunes[type][randomIndex];
+                
+                let partName = "";
+                let actionName = "";
+                if(type === '智慧籤') { resultBox.style.background = "linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%)"; resultBox.style.color = "#2b6cb0"; resultBox.style.border = "3px solid #4299e1"; partName = "頭頂"; actionName = "智慧金句籤"; }
+                if(type === '答案籤') { resultBox.style.background = "linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%)"; resultBox.style.color = "#234e52"; resultBox.style.border = "3px solid #319795"; partName = "左手"; actionName = "今日答案籤"; }
+                if(type === '勇氣籤') { resultBox.style.background = "linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%)"; resultBox.style.color = "#9c4221"; resultBox.style.border = "3px solid #dd6b20"; partName = "右手"; actionName = "勇氣陪伴籤"; }
+
+                showHtml = `🎉 <b>您成功抽到了【${actionName}】！</b><br>
+                            <span style="font-size: 1.2rem; color: #4a5568; font-weight: normal; display:inline-block; margin-top:5px;">🤖 凱比現場聲音模擬：</span>
+                            <span style="font-size: 1.7rem; color: #cc0000; display:block; margin-top:3px; background:#fff; padding:8px 12px; border-radius:10px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.05)">「${phrase}」</span>`;
+                
+                audioTxt = `您抽到了${actionName}。現場凱比對您說：${phrase}`;
+            }
+
+            resultBox.innerHTML = showHtml;
+            speak(audioTxt);
+        }
+
+        function speak(text) {
+            const synth = window.speechSynthesis;
+            const utterThis = new SpeechSynthesisUtterance(text);
+            utterThis.lang = 'zh-TW';
+            utterThis.rate = 0.85; 
+            synth.speak(utterThis);
+        }
+
+        function refreshPage() {
+            window.speechSynthesis.cancel(); 
+            window.location.reload();
+        }
+
+        function leavePage() {
+            window.speechSynthesis.cancel();
+            alert("太棒了！您已經學會如何跟凱比機器人互動囉！🎉\n現在可以去現場摸摸看真正的凱比了喔！");
+            
+            window.opener = null;
+            window.open('', '_self');
+            window.close();
+        }
+    </script>
+</body>
+</html>
